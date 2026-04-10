@@ -17,17 +17,52 @@ Replace this paragraph with your own summary of what your version does.
 
 ## How The System Works
 
-Explain your design in plain language.
+Real-world recommendation systems like Spotify use content-based filtering to match a song's audio features to a user's taste profile. Rather than simply preferring high or low values, they reward songs whose features are *close* to what the user wants. This system follows the same approach: each song is scored against the user's preferences using a weighted formula, and the highest-scoring songs are returned as recommendations.
 
-Some prompts to answer:
+**Algorithm recipe — scoring weights:**
 
-- What features does each `Song` use in your system
-  - For example: genre, mood, energy, tempo
-- What information does your `UserProfile` store
-- How does your `Recommender` compute a score for each song
-- How do you choose which songs to recommend
+| Component | Weight | How it's applied |
+|---|---|---|
+| Genre match | 2.0 | +2.0 if song genre exactly matches `favorite_genre`, else 0 |
+| Mood match — exact | 1.5 | +1.5 if song mood exactly matches `favorite_mood` |
+| Mood match — related | 0.75 | +0.75 if song mood is in the same group (e.g. `chill` ↔ `relaxed` ↔ `focused`) |
+| Energy | 1.5 | `1 − \|target − song\|` × 1.5 |
+| Acousticness | 1.5 | `1 − \|target − song\|` × 1.5 |
+| Valence | 1.0 | `1 − \|target − song\|` × 1.0 |
+| Tempo | 1.0 | `1 − \|target − song\| ÷ 100` × 1.0 |
+| Danceability | 0.5 | `1 − \|target − song\|` × 0.5 |
+| **Max total** | **9.0** | |
 
-You can include a simple diagram or bullet list if helpful.
+**How scoring and ranking work together:**
+
+Every song in the catalog is scored individually against the user profile, producing a number between 0 and 9.0. Genre carries the highest single weight because it acts as a shorthand for a cluster of sonic properties — knowing a song is lofi already predicts its energy, acousticness, and tempo range. Mood uses soft matching so semantically similar moods earn partial credit rather than scoring zero. The four numeric features reward songs that *feel* close to the user's targets: energy and acousticness are weighted highest because they have the widest spread across the catalog and do the most to separate genres; danceability is weighted lowest because in this dataset it barely varies between similar songs. Once every song has a score, all results are sorted high-to-low and the top K are returned with a plain-English explanation of why each song matched.
+
+**Potential biases:**
+
+- **Genre anchoring.** Genre carries the highest weight, so a song that perfectly matches the user's mood and numeric targets in a different genre will often lose to a weaker match in the user's favorite genre. A great ambient track may be buried below a mediocre lofi one for a lofi-preference user.
+- **Hand-coded mood groups.** The soft mood groupings (`chill → relaxed → focused`, etc.) reflect one designer's intuition, not user research. Someone might reasonably feel that `moody` and `focused` belong together, or that `relaxed` and `chill` are not interchangeable.
+- **Tempo normalization is arbitrary.** Dividing the tempo gap by 100 is a judgment call. A different divisor would shift how much tempo influences results relative to the other features.
+- **Small catalog amplifies noise.** With 18 songs, a small weight change can flip rankings. Patterns that look meaningful here may not hold as the catalog grows.
+
+**`Song` features:**
+- `energy` — intensity level (0.0–1.0)
+- `acousticness` — how acoustic vs. produced the track is (0.0–1.0)
+- `valence` — musical positivity, happy to melancholic (0.0–1.0)
+- `danceability` — how suitable the track is for dancing (0.0–1.0)
+- `tempo_bpm` — beats per minute
+- `mood` — label: `happy`, `chill`, `intense`, `relaxed`, `focused`, `moody`, `sad`, `melancholic`, `energetic`, `romantic`, `angry`, `euphoric`
+- `genre` — label: `pop`, `lofi`, `rock`, `ambient`, `synthwave`, `jazz`, `indie pop`, `classical`, `hip-hop`, `r&b`, `country`, `folk`, `metal`, `blues`, `edm`
+
+**`UserProfile` stores:**
+- `favorite_genre` and `favorite_mood` — categorical preferences
+- `target_energy`, `target_acousticness`, `target_valence`, `target_danceability` — numeric targets (0.0–1.0)
+- `target_tempo_bpm` — desired tempo in beats per minute
+
+---
+
+## Sample Output
+
+![Sample output showing top 5 recommendations for a chill lofi user profile](docs/sample_output.png)
 
 ---
 
