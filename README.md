@@ -2,16 +2,11 @@
 
 ## Project Summary
 
-In this project you will build and explain a small music recommender system.
+TuneFit 1.0 is a CLI music recommender that scores 18 songs against a user taste profile and returns the top 5 matches with a plain-language explanation for each result. It uses content-based filtering — no user history, no collaborative data — just audio features compared directly to what the user says they want.
 
-Your goal is to:
+Each song is scored on seven signals: genre match (+2.0), exact mood match (+1.5), related mood match (+0.75), and proximity scores for energy, acousticness, valence, danceability, and tempo. The highest-scoring songs are returned in ranked order with per-contribution breakdowns so you can see exactly why each song placed where it did.
 
-- Represent songs and a user "taste profile" as data
-- Design a scoring rule that turns that data into recommendations
-- Evaluate what your system gets right and wrong
-- Reflect on how this mirrors real world AI recommenders
-
-Replace this paragraph with your own summary of what your version does.
+The project was built and stress-tested across five user profiles — including two adversarial cases designed to expose weaknesses in the scoring logic. Key findings: the genre bonus can anchor a mismatched song to #1 when a genre has only one representative in the catalog, and mood matching is load-bearing — removing it caused emotionally misaligned results even when genre and audio features were correct.
 
 ---
 
