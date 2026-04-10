@@ -20,6 +20,27 @@ MOOD_GROUPS: Dict[str, set] = {
     "romantic":   {"romantic"},
 }
 
+# Genres grouped by sonic similarity — used for diversity penalties in recommend_songs.
+# If a song's genre is in the same group as a genre already in the results list,
+# it receives a genre-repeat penalty even though the label differs.
+GENRE_GROUPS: Dict[str, set] = {
+    "rock":      {"rock", "metal"},
+    "metal":     {"metal", "rock"},
+    "pop":       {"pop", "indie pop"},
+    "indie pop": {"indie pop", "pop"},
+    "lofi":      {"lofi", "ambient"},
+    "ambient":   {"ambient", "lofi"},
+    "jazz":      {"jazz", "blues"},
+    "blues":     {"blues", "jazz"},
+    "folk":      {"folk", "country"},
+    "country":   {"country", "folk"},
+    "hip-hop":   {"hip-hop", "r&b"},
+    "r&b":       {"r&b", "hip-hop"},
+    "classical": {"classical"},
+    "synthwave": {"synthwave"},
+    "edm":       {"edm"},
+}
+
 @dataclass
 class Song:
     """
@@ -131,20 +152,61 @@ def score_song(user_prefs: Dict, song: Dict) -> Tuple[float, List[str]]:
 # sorted()     — leaves the original list untouched and returns
 #                a brand-new sorted list.
 #
-# Why sorted() is the right choice here:
-# recommend_songs() receives `songs` from the caller (main.py or a test).
-# Sorting it in place with .sort() would silently reorder the caller's
-# data as a side effect — a hidden mutation that could cause confusing
-# bugs if the list is reused or inspected after the call.
-# sorted() keeps recommend_songs() a pure function: same inputs always
-# produce the same output, and nothing outside the function is changed.
+# recommend_songs() scores all songs with sorted() first (no mutation),
+# then builds the final top-k list iteratively so a diversity penalty
+# can be applied each round. Both steps avoid mutating the caller's data.
 
 def recommend_songs(user_prefs: Dict, songs: List[Dict], k: int = 5) -> List[Tuple[Dict, float, List[str]]]:
-    """Score all songs and return the top k as (song, score, reasons) tuples sorted by score descending."""
-    scored = []
-    for song in songs:
-        song_score, reasons = score_song(user_prefs, song)
-        scored.append((song, song_score, reasons))
+    """Score all songs and return the top k as (song, score, reasons) tuples with diversity penalty applied."""
 
-    # sorted() returns a new list — the original `songs` list is never touched
-    return sorted(scored, key=lambda x: x[1], reverse=True)[:k]
+    # Step 1 — score every song once, leaving the caller's list untouched
+    scored = sorted(
+        [(song, *score_song(user_prefs, song)) for song in songs],
+        key=lambda x: x[1],
+        reverse=True,
+    )
+
+    # Step 2 — greedy iterative selection with tiered diversity penalties.
+    #   Artist repeat : -1.50  (strong suppression — same artist twice feels repetitive)
+    #   Genre-group repeat : -0.75  (softer — similar genres can still appear but deprioritised)
+    # Penalties stack: a song that repeats both artist and genre group loses 2.25.
+    # Raw scores in `scored` are never modified.
+    results = []
+    remaining = list(scored)
+
+    while len(results) < k and remaining:
+        selected_artists = {r[0]["artist"] for r in results}
+        selected_genres  = {r[0]["genre"]  for r in results}
+
+        # Build the full set of genres "blocked" by similarity groups
+        blocked_genres: set = set()
+        for g in selected_genres:
+            blocked_genres.update(GENRE_GROUPS.get(g, {g}))
+
+        best_score = float("-inf")
+        best_idx   = 0
+
+        for i, (song, score, _) in enumerate(remaining):
+            adjusted = score
+            if song["artist"] in selected_artists:
+                adjusted -= 1.50
+            if song["genre"] in blocked_genres:
+                adjusted -= 0.75
+            if adjusted > best_score:
+                best_score = adjusted
+                best_idx   = i
+
+        song, raw_score, reasons = remaining.pop(best_idx)
+
+        # Append only the penalties that actually fired this round
+        penalty_reasons = []
+        if song["artist"] in selected_artists:
+            penalty_reasons.append("artist repeat (-1.50)")
+        if song["genre"] in blocked_genres:
+            penalty_reasons.append("genre group repeat (-0.75)")
+        if penalty_reasons:
+            reasons = reasons + penalty_reasons
+
+        results.append((song, best_score, reasons))
+
+    return results

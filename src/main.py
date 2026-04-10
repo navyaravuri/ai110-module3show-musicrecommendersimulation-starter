@@ -75,17 +75,55 @@ def main() -> None:
         }),
     ]
 
+    all_results = {}
+
     for profile_name, user_prefs in profiles:
         print(f"\n{'=' * 40}")
         print(f"  {profile_name}")
         print(f"{'=' * 40}")
         recommendations = recommend_songs(user_prefs, songs, k=5)
+        all_results[profile_name] = recommendations
+
+        PENALTY_AMOUNTS = {"artist repeat (-1.50)": 1.50, "genre group repeat (-0.75)": 0.75}
+
         for rank, (song, score, reasons) in enumerate(recommendations, start=1):
+            total_penalty = sum(PENALTY_AMOUNTS[r] for r in reasons if r in PENALTY_AMOUNTS)
             print(f"#{rank}  {song['title']} — {song['artist']}")
-            print(f"    Score: {score:.2f} / 9.0")
+            if total_penalty:
+                print(f"    Score: {score + total_penalty:.2f} → {score:.2f} / 9.0  [diversity penalty: -{total_penalty:.2f}]")
+            else:
+                print(f"    Score: {score:.2f} / 9.0")
             for reason in reasons:
                 print(f"    • {reason}")
             print("-" * 40)
+
+    # --- Post-run diversity audit ---
+    print(f"\n{'=' * 40}")
+    print("  DIVERSITY AUDIT")
+    print(f"{'=' * 40}")
+
+    for profile_name, recommendations in all_results.items():
+        titles  = [s["title"]  for s, _, _ in recommendations]
+        artists = [s["artist"] for s, _, _ in recommendations]
+        genres  = [s["genre"]  for s, _, _ in recommendations]
+
+        duplicate_artists = [a for a in set(artists) if artists.count(a) > 1]
+        storm_and_black   = (
+            any("Storm Runner"  in t for t in titles) and
+            any("Blackout Riff" in t for t in titles)
+        )
+
+        print(f"\n{profile_name}")
+        print(f"  Artists : {', '.join(artists)}")
+        print(f"  Genres  : {', '.join(genres)}")
+        if duplicate_artists:
+            print(f"  ⚠ Duplicate artist(s): {', '.join(duplicate_artists)}")
+        else:
+            print(f"  ✓ No duplicate artists")
+        if storm_and_black:
+            print(f"  ⚠ Storm Runner + Blackout Riff both appear")
+        else:
+            print(f"  ✓ Storm Runner and Blackout Riff not both present")
 
 
 if __name__ == "__main__":
