@@ -103,8 +103,8 @@ def score_song(user_prefs: Dict, song: Dict) -> Tuple[float, List[str]]:
 
     # --- Numeric features ---
     numeric_features = [
-        ("target_energy",       "energy",       1.5, "energy"),
-        ("target_acousticness", "acousticness", 1.5, "acousticness"),
+        ("target_energy",       "energy",       1.25, "energy"),
+        ("target_acousticness", "acousticness", 1.25, "acousticness"),
         ("target_valence",      "valence",       1.0, "valence"),
         ("target_danceability", "danceability",  0.5, "danceability"),
     ]

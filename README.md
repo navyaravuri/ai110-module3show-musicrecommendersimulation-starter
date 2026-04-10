@@ -64,6 +64,17 @@ Every song in the catalog is scored individually against the user profile, produ
 
 ![Sample output showing top 5 recommendations for a chill lofi user profile](docs/sample_output.png)
 
+### Full Run — All Profiles
+
+![Output 1](docs/phase4-1.png)
+![Output 2](docs/phase4-2.png)
+![Output 3](docs/phase4-3.png)
+![Output 4](docs/phase4-4.png)
+![Output 5](docs/phase4-5.png)
+![Output 6](docs/phase4-6.png)
+![Output 7](docs/phase4-7.png)
+![Output 8](docs/phase4-8.png)
+
 ---
 
 ## Getting Started
