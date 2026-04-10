@@ -57,18 +57,56 @@ Every song in the catalog is scored individually against the user profile, produ
 
 ## Sample Output
 
+<details>
+<summary>Chill Lofi — early run</summary>
+
 ![Sample output showing top 5 recommendations for a chill lofi user profile](docs/sample_output.png)
+
+</details>
 
 ### Full Run — All Profiles
 
+<details>
+<summary>ADVERSARIAL — High-Energy Classical (conflicting preferences)</summary>
+
 ![Output 1](docs/phase4-1.png)
+
+</details>
+
+<details>
+<summary>ADVERSARIAL — Reggae Fan (genre not in catalog)</summary>
+
 ![Output 2](docs/phase4-2.png)
+
+</details>
+
+<details>
+<summary>High-Energy Rock</summary>
+
 ![Output 3](docs/phase4-3.png)
 ![Output 4](docs/phase4-4.png)
+
+</details>
+
+<details>
+<summary>Chill Lofi</summary>
+
 ![Output 5](docs/phase4-5.png)
 ![Output 6](docs/phase4-6.png)
+
+</details>
+
+<details>
+<summary>Deep Intense Rock</summary>
+
 ![Output 7](docs/phase4-7.png)
 ![Output 8](docs/phase4-8.png)
+
+</details>
+
+### Challenge 4 — Formatted Table Output
+
+<img src="docs/table_output_chill_lofi.png" width="700"/>
 
 ---
 

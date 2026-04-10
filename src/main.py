@@ -9,6 +9,8 @@ You will implement the functions in recommender.py:
 - recommend_songs
 """
 
+from tabulate import tabulate
+
 from recommender import load_songs, recommend_songs
 
 
@@ -86,16 +88,27 @@ def main() -> None:
 
         PENALTY_AMOUNTS = {"artist repeat (-1.50)": 1.50, "genre group repeat (-0.75)": 0.75}
 
+        rows = []
         for rank, (song, score, reasons) in enumerate(recommendations, start=1):
             total_penalty = sum(PENALTY_AMOUNTS[r] for r in reasons if r in PENALTY_AMOUNTS)
-            print(f"#{rank}  {song['title']} — {song['artist']}")
-            if total_penalty:
-                print(f"    Score: {score + total_penalty:.2f} → {score:.2f} / 9.0  [diversity penalty: -{total_penalty:.2f}]")
-            else:
-                print(f"    Score: {score:.2f} / 9.0")
-            for reason in reasons:
-                print(f"    • {reason}")
-            print("-" * 40)
+            score_str = (
+                f"{score + total_penalty:.2f} → {score:.2f} / 9.0"
+                if total_penalty
+                else f"{score:.2f} / 9.0"
+            )
+            rows.append([
+                f"#{rank}",
+                song["title"],
+                song["artist"],
+                score_str,
+                "\n".join(f"• {r}" for r in reasons),
+            ])
+
+        print(tabulate(
+            rows,
+            headers=["", "Title", "Artist", "Score", "Reasons"],
+            tablefmt="rounded_outline",
+        ))
 
     # --- Post-run diversity audit ---
     print(f"\n{'=' * 40}")
